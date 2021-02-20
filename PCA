@@ -1,0 +1,84 @@
+import pandas as pd
+import numpy as np
+import sklearn.metrics as mt
+import sklearn.model_selection as sk
+
+def printModelSummary(actual, predicted):
+ '''
+ Method to print out model summaries
+ '''
+ print('Overall accuracy of the model is {0:.2f} percent'
+\
+ .format(
+ (actual == predicted).sum() /len(actual) * 100))
+ print('Confusion matrix:
+\n', mt.confusion_matrix(actual, predicted))
+ print('Classification report:
+\n', mt.classification_report(actual,
+ predicted))
+ print('ROC: ', mt.roc_auc_score(actual, predicted))
+
+def split_data(data, y, x = 'All', test_size = 0.33):
+ '''
+ Method to split the data into training and testing
+ '''
+ # dependent variable
+ variables = {'y': y}
+ allColumns = list(data.columns)
+ allColumns.remove(y)
+ variables['x'] = allColumns
+
+ # create a variable to flag the training sample
+ data['train'] = np.random.rand(len(data)) < (1
+- test_size)
+ # split the data into training and testing
+ train_x = data[data.train] [variables['x']]
+ train_y = data[data.train] [variables['y']]
+ test_x = data[~data.train][variables['x']
+]
+ test_y = data[~data.train][variables['y']]
+ return train_x, train_y, test_x, test_y, variables['x']
+def fitDecisionTree(data):
+ '''
+ Build a decision tree classifier
+ '''
+ # create the classifier object
+ tree = sk.DecisionTreeClassifier(min_samples_split=1000)
+ # fit the data
+ tree.fit(data[0],data[1])
+ # return the classifier
+ return tree
+
+# the file name of the dataset
+r_filename ='path/bank_contacts.csv'
+# read the data
+csv_read = pd.read_csv(r_filename)
+
+# split the data into training and testing
+train_x, train_y,
+\
+test_x, test_y, \
+labels = split_data(
+ csv_read,
+ y = 'credit_application'
+)
+
+from sklearn.decomposition import PCA
+
+pca = PCA(n_components = 8) #no of principal components
+train_x = pca.fit_transform(train_x) #unsupervised(no label info)
+test_x= pca.transform(test_x)
+
+# train the model
+classifier = fitDecisionTree((train_x, train_y))
+# classify the unseen data
+predicted = classifier.predict(test_x)
+
+# print out the results
+printModelSummary(test_y, predicted)
+# print out the importance of features
+for counter, (nm, label) \
+ in enumerate(
+ zip(labels, classifier.feature_importances_)
+ ):
+ print("{0}. {1}: {2}".format(counter, nm,label))
